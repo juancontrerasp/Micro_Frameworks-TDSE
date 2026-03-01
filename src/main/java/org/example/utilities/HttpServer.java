@@ -2,6 +2,7 @@ package org.example.utilities;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -14,7 +15,11 @@ import java.util.Map;
 public class HttpServer {
 
     static Map<String, Route> endPoints = new HashMap<>();
+    private static String staticFilesLocation = null;
 
+    public static void staticfiles(String location) {
+        staticFilesLocation = location;
+    }
 
     public static void start() throws IOException, URISyntaxException {
         main(new String[]{});
@@ -89,19 +94,11 @@ public class HttpServer {
                         + "</body>"
                         + "</html>";
             } else {
+                String body = serveStaticFile(reqPath);
                 outputLine = "HTTP/1.1 200 OK\n\r"
                         + "Content-Type: text/html\n\r"
                         + "\n\r"
-                        + "<!DOCTYPE html>"
-                        + "<html>"
-                        + "<head>"
-                        + "<meta charset=\"UTF-8\">"
-                        + "<title>Title of the document</title>\n"
-                        + "</head>"
-                        + "<body>"
-                        + "My Web Site"
-                        + "</body>"
-                        + "</html>";
+                        + body;
             }
             out.println(outputLine);
 
@@ -134,6 +131,21 @@ public class HttpServer {
             }
         }
         return new Request(params);
+    }
+
+    private static String serveStaticFile(String reqPath) {
+        if (staticFilesLocation != null) {
+            String resourcePath = "/" + staticFilesLocation + reqPath;
+            try (InputStream fileStream = HttpServer.class.getResourceAsStream(resourcePath)) {
+                if (fileStream != null) {
+                    return new String(fileStream.readAllBytes());
+                }
+            } catch (IOException e) {
+                System.err.println("Error reading static file: " + e.getMessage());
+            }
+        }
+        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Not Found</title></head>"
+                + "<body>404 - Not Found</body></html>";
     }
 
 

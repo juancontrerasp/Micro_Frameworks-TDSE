@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class HttpServer {
 
-    static Map<String, WebMethod> endPoints = new HashMap<>();
+    static Map<String, Route> endPoints = new HashMap<>();
 
 
     public static void start() throws IOException, URISyntaxException {
@@ -50,7 +50,7 @@ public class HttpServer {
             boolean isFirstLine = true;
 
             String reqPath = "";
-
+            Request request = new Request(new java.util.HashMap<>());
 
             while ((inputLine = in.readLine()) != null) {
                 System.out.println("Received: " + inputLine);
@@ -61,6 +61,7 @@ public class HttpServer {
                     String protocolVersion = firstLineTokens[2];
                     URI requestedURI = new URI(uristr);
                     reqPath = requestedURI.getPath();
+                    request = parseRequest(requestedURI);
                     System.out.println("Path: " + reqPath);
                     isFirstLine = false;
                 }
@@ -71,9 +72,9 @@ public class HttpServer {
                 }
             }
 
-            WebMethod wm = endPoints.get(reqPath);
+            Route route = endPoints.get(reqPath);
 
-            if (wm != null) {
+            if (route != null) {
                 outputLine = "HTTP/1.1 200 OK\n\r"
                         + "Content-Type: text/html\n\r"
                         + "\n\r"
@@ -84,7 +85,7 @@ public class HttpServer {
                         + "<title>Title of the document</title>\n"
                         + "</head>"
                         + "<body>"
-                        + wm.execute()
+                        + route.handle(request, new Response())
                         + "</body>"
                         + "</html>";
             } else {
@@ -112,11 +113,27 @@ public class HttpServer {
     }
 
     public static void get(String path, WebMethod wm){
-        endPoints.put(path, wm);
+        endPoints.put(path, (req, res) -> wm.execute());
     }
 
     public static void get(String path, Route route){
-        endPoints.put(path, () -> route.handle(new Request(), new Response()));
+        endPoints.put(path, route);
+    }
+
+    private static Request parseRequest(URI uri) {
+        java.util.Map<String, String> params = new java.util.HashMap<>();
+        String query = uri.getQuery();
+        if (query != null) {
+            for (String pair : query.split("&")) {
+                String[] kv = pair.split("=", 2);
+                if (kv.length == 2) {
+                    params.put(kv[0], kv[1]);
+                } else if (kv.length == 1) {
+                    params.put(kv[0], "");
+                }
+            }
+        }
+        return new Request(params);
     }
 
 

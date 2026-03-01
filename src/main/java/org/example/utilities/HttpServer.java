@@ -16,6 +16,10 @@ public class HttpServer {
     static Map<String, WebMethod> endPoints = new HashMap<>();
 
 
+    public static void start() throws IOException, URISyntaxException {
+        main(new String[]{});
+    }
+
     public static void main(String[] args) throws IOException, URISyntaxException {
         ServerSocket serverSocket = null;
         try {

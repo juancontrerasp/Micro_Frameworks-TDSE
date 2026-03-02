@@ -16,9 +16,14 @@ public class HttpServer {
 
     static Map<String, Route> endPoints = new HashMap<>();
     private static String staticFilesLocation = null;
+    private static String appPath = "";
 
     public static void staticfiles(String location) {
         staticFilesLocation = location;
+    }
+
+    public static void path(String prefix) {
+        appPath = prefix;
     }
 
     public static void start() throws IOException, URISyntaxException {
@@ -110,11 +115,11 @@ public class HttpServer {
     }
 
     public static void get(String path, WebMethod wm){
-        endPoints.put(path, (req, res) -> wm.execute());
+        endPoints.put(appPath + path, (req, res) -> wm.execute());
     }
 
     public static void get(String path, Route route){
-        endPoints.put(path, route);
+        endPoints.put(appPath + path, route);
     }
 
     private static Request parseRequest(URI uri) {
@@ -135,7 +140,8 @@ public class HttpServer {
 
     private static String serveStaticFile(String reqPath) {
         if (staticFilesLocation != null) {
-            String resourcePath = "/" + staticFilesLocation + reqPath;
+            String base = staticFilesLocation.startsWith("/") ? staticFilesLocation : "/" + staticFilesLocation;
+            String resourcePath = base + reqPath;
             try (InputStream fileStream = HttpServer.class.getResourceAsStream(resourcePath)) {
                 if (fileStream != null) {
                     return new String(fileStream.readAllBytes());
